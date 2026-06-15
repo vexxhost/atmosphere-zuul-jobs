@@ -1,0 +1,16 @@
+- project-template:
+    name: atmosphere-molecule-jobs
+    check:
+      jobs:
+        - atmosphere-molecule-aio-openvswitch
+        - atmosphere-molecule-aio-ovn
+        - atmosphere-molecule-csi-local-path-provisioner
+        - atmosphere-molecule-csi-rbd
+        - atmosphere-molecule-keycloak
+    gate:
+      jobs:
+        - atmosphere-molecule-aio-openvswitch
+        - atmosphere-molecule-aio-ovn
+        - atmosphere-molecule-csi-local-path-provisioner
+        - atmosphere-molecule-csi-rbd
+        - atmosphere-molecule-keycloak

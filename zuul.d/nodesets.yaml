@@ -1,0 +1,22 @@
+- nodeset:
+    name: atmosphere-ubuntu-jammy-single-node
+    nodes:
+      - name: instance
+        label: ubuntu-jammy
+    groups: &single_node_groups
+      - name: controllers
+        nodes:
+          - instance
+      - name: cephs
+        nodes:
+          - instance
+      - name: computes
+        nodes:
+          - instance
+
+- nodeset:
+    name: atmosphere-ubuntu-jammy-single-node-16
+    nodes:
+      - name: instance
+        label: ubuntu-jammy-16
+    groups: *single_node_groups
