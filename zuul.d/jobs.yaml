@@ -9,6 +9,7 @@
       - ^\.agents/.*$
       - ^doc/.*$
       - ^releasenotes/.*$
+      - ^renovate\.json$
       - ^\.pre-commit-config.yaml$
     required-projects:
       - ansible-collections/ansible.netcommon
