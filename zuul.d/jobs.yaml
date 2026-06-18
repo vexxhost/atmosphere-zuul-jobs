@@ -133,6 +133,13 @@
           replicas:
             api: 1
             conductor: 1
+      senlin_helm_values:
+        pod:
+          replicas:
+            api: 1
+            conductor: 1
+            engine: 1
+            health_manager: 1
       cinder_helm_values:
         conf:
           ceph:
