@@ -97,6 +97,10 @@
           size: 1
         haproxy:
           size: 1
+      keycloak_cloudnative_pg_cluster_spec:
+        instances: 1
+      keycloak_spec:
+        instances: 1
       keystone_helm_values:
         pod:
           replicas:
@@ -286,6 +290,10 @@
           size: 1
         haproxy:
           size: 1
+      keycloak_cloudnative_pg_cluster_spec:
+        instances: 1
+      keycloak_spec:
+        instances: 1
       keystone_helm_values:
         pod:
           replicas:
