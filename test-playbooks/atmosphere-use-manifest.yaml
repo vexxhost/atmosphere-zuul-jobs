@@ -1,0 +1,89 @@
+# Copyright (c) 2026 VEXXHOST, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Test the atmosphere-use-manifest role
+  hosts: all
+  tasks:
+    - name: Include atmosphere-use-manifest
+      ansible.builtin.include_role:
+        name: atmosphere-use-manifest
+
+    - name: Check that Atmosphere is pointed at the registry
+      ansible.builtin.assert:
+        that:
+          - atmosphere_release_manifest == 'atmosphere-ci-registry:5443/vexxhost/atmosphere-release:ci'
+          - atmosphere_release_manifest_ca_file == '/usr/local/share/ca-certificates/atmosphere-ci-registry.crt'
+
+    - name: Read the release manifest from the build job
+      ansible.builtin.slurp:
+        src: "{{ ansible_user_dir }}/release-manifest.yaml"
+      register: _built
+
+    - name: Check the release manifest
+      vars:
+        manifest: "{{ _built.content | b64decode | from_yaml }}"
+        images: "{{ manifest.images.values() | list }}"
+      ansible.builtin.assert:
+        that:
+          - manifest.apiVersion == 'atmosphere.vexxhost.com/v1alpha1'
+          - manifest.kind == 'ReleaseManifest'
+          - manifest.commit | length > 0
+          - manifest.inputs is match('^sha256:[a-f0-9]{64}$')
+          - images | length > 100
+          # Every image is pinned by digest.
+          - images | reject('search', '@sha256:[a-f0-9]{64}$') | list | length == 0
+          # Tags are resolved through the cache, but the manifest records the
+          # original references.
+          - images | select('match', 'harbor\.atmosphere\.dev/') | list | length == 0
+          - manifest.kubernetes.images | length > 0
+        fail_msg: "Invalid release manifest: {{ _built.content | b64decode }}"
+
+    - name: Read the release manifest back from the registry
+      ansible.builtin.command:
+        argv: [atmosphere-release, show, "{{ atmosphere_release_manifest }}"]
+      environment:
+        DOCKER_CONFIG: "{{ ansible_user_dir }}/.docker"
+      register: _from_registry
+      changed_when: false
+
+    - name: Check that the registry serves the manifest the build job generated
+      ansible.builtin.assert:
+        that:
+          - _from_registry.stdout | trim == _built.content | b64decode | trim
+
+    - name: Read the release manifest the way Atmosphere does
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -c
+          - |
+            import importlib.util, json, os, sys
+            # NOTE: The module only needs the standard library and PyYAML, so
+            #       load it from the checkout instead of importing it through
+            #       an installed collection.
+            spec = importlib.util.spec_from_file_location(
+                "release_manifest",
+                os.path.join(sys.argv[1], "plugins", "module_utils", "release_manifest.py"),
+            )
+            rm = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(rm)
+            location = rm.resolve_location(
+                sys.argv[2], prefix="harbor.atmosphere.dev/",
+                mirrors=[{"source": "atmosphere-ci-registry:5443", "mirror": "atmosphere-ci-registry:5443"}],
+            )
+            print(json.dumps(rm.load_manifest(location, ca_file=sys.argv[3])["images"]))
+          # NOTE: src_dir is relative to the home directory; the command
+          #       already runs in the checkout.
+          - "."
+          - "{{ atmosphere_release_manifest }}"
+          - "{{ atmosphere_release_manifest_ca_file }}"
+        chdir: "{{ zuul.projects['github.com/vexxhost/atmosphere'].src_dir }}"
+      environment:
+        DOCKER_CONFIG: "{{ ansible_user_dir }}/.docker"
+      register: _atmosphere_read
+      changed_when: false
+
+    - name: Check that Atmosphere reads the same images
+      ansible.builtin.assert:
+        that:
+          - (_atmosphere_read.stdout | from_json) == (_built.content | b64decode | from_yaml).images
