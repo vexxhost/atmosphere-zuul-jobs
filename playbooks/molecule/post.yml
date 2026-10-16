@@ -1,7 +1,8 @@
 # Copyright (c) 2025 VEXXHOST, Inc.
 # SPDX-License-Identifier: Apache-2.0
 
-- hosts: all
+- name: Collect logs
+  hosts: all
   become: true
   vars:
     work_dir: "{{ zuul.project.src_dir }}"

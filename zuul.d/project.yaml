@@ -1,3 +1,7 @@
 - project:
-    templates:
-      - noop-jobs
+    check:
+      jobs:
+        - pre-commit
+    gate:
+      jobs:
+        - pre-commit

@@ -1,0 +1,10 @@
+atmosphere_use_manifest_host: atmosphere-ci-registry
+atmosphere_use_manifest_port: 5443
+atmosphere_use_manifest_reference: "{{ atmosphere_use_manifest_host }}:{{ atmosphere_use_manifest_port }}/vexxhost/atmosphere-release:ci"
+atmosphere_use_manifest_ca_file: /usr/local/share/ca-certificates/atmosphere-ci-registry.crt
+atmosphere_use_manifest_dir: /opt/atmosphere-ci-registry
+atmosphere_use_manifest_registry_version: 3.0.0
+atmosphere_use_manifest_registry_checksum: "sha256:61c9a2c0d5981a78482025b6b69728521fbc78506d68b223d4a2eb825de5ca3d"
+atmosphere_use_manifest_registry_url: >-
+  https://github.com/distribution/distribution/releases/download/v{{ atmosphere_use_manifest_registry_version
+  }}/registry_{{ atmosphere_use_manifest_registry_version }}_linux_amd64.tar.gz

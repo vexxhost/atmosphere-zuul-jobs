@@ -1,0 +1,171 @@
+- name: Find the release manifest artifacts
+  vars:
+    _artifacts: "{{ zuul.artifacts | default([]) | items2dict(key_name='name', value_name='url') }}"
+  ansible.builtin.set_fact:
+    _manifest_url: "{{ _artifacts['Release manifest'] | default('') }}"
+    _tool_url: "{{ _artifacts['atmosphere-release'] | default('') }}"
+
+- name: Check that a job built the release manifest
+  ansible.builtin.assert:
+    that:
+      - _manifest_url | length > 0
+      - _tool_url | length > 0
+      - atmosphere_release_manifest_digest is defined
+    fail_msg: >-
+      This job must depend on a job using the atmosphere-build-manifest role.
+
+- name: Generate the registry password
+  ansible.builtin.set_fact:
+    _atmosphere_use_manifest_password: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
+  no_log: true
+
+- name: Install the registry and its tools
+  become: true
+  block:
+    - name: Install the libraries for the htpasswd module
+      ansible.builtin.apt:
+        name:
+          - python3-bcrypt
+          - python3-passlib
+        update_cache: true
+
+    - name: Create the registry directories
+      ansible.builtin.file:
+        path: "{{ atmosphere_use_manifest_dir }}/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop: [bin, data, tls]
+
+    - name: Download atmosphere-release from the build job
+      ansible.builtin.get_url:
+        url: "{{ _tool_url }}"
+        dest: /usr/local/bin/atmosphere-release
+        mode: "0755"
+
+    - name: Download the registry
+      ansible.builtin.get_url:
+        url: "{{ atmosphere_use_manifest_registry_url }}"
+        dest: "{{ atmosphere_use_manifest_dir }}/registry.tar.gz"
+        checksum: "{{ atmosphere_use_manifest_registry_checksum }}"
+        mode: "0644"
+
+    - name: Extract the registry
+      ansible.builtin.unarchive:
+        src: "{{ atmosphere_use_manifest_dir }}/registry.tar.gz"
+        dest: "{{ atmosphere_use_manifest_dir }}/bin"
+        remote_src: true
+        include: [registry]
+
+    - name: Resolve the registry name to this node
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "127.0.0.1 {{ atmosphere_use_manifest_host }}"
+
+    - name: Create a throwaway CA and registry certificate
+      ansible.builtin.shell: |
+        set -e
+        cd {{ atmosphere_use_manifest_dir }}/tls
+        openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+          -keyout ca.key -out ca.pem -subj "/CN=atmosphere-ci-registry CA"
+        openssl req -newkey rsa:2048 -nodes -keyout key.pem -out cert.csr \
+          -subj "/CN={{ atmosphere_use_manifest_host }}"
+        printf 'subjectAltName=DNS:%s\n' {{ atmosphere_use_manifest_host }} > san.ext
+        openssl x509 -req -in cert.csr -CA ca.pem -CAkey ca.key -CAcreateserial \
+          -days 1 -extfile san.ext -out cert.pem
+      args:
+        creates: "{{ atmosphere_use_manifest_dir }}/tls/cert.pem"
+
+    # NOTE: The Go tooling trusts the system store; Atmosphere is given the CA
+    #       explicitly with atmosphere_release_manifest_ca_file.
+    - name: Trust the registry CA
+      ansible.builtin.copy:
+        src: "{{ atmosphere_use_manifest_dir }}/tls/ca.pem"
+        dest: "{{ atmosphere_use_manifest_ca_file }}"
+        remote_src: true
+        mode: "0644"
+
+    - name: Update the system CA store
+      ansible.builtin.command: update-ca-certificates
+      changed_when: true
+
+    - name: Create the registry user
+      community.general.htpasswd:
+        path: "{{ atmosphere_use_manifest_dir }}/htpasswd"
+        name: ci
+        password: "{{ _atmosphere_use_manifest_password }}"
+        crypt_scheme: bcrypt
+        mode: "0640"
+      no_log: true
+
+    - name: Configure the registry
+      ansible.builtin.template:
+        src: config.yml.j2
+        dest: "{{ atmosphere_use_manifest_dir }}/config.yml"
+        mode: "0644"
+
+    - name: Start the registry
+      ansible.builtin.command:
+        argv:
+          - systemd-run
+          - --unit=atmosphere-ci-registry
+          - "{{ atmosphere_use_manifest_dir }}/bin/registry"
+          - serve
+          - "{{ atmosphere_use_manifest_dir }}/config.yml"
+      changed_when: true
+
+- name: Wait for the registry
+  ansible.builtin.uri:
+    url: "https://{{ atmosphere_use_manifest_host }}:{{ atmosphere_use_manifest_port }}/v2/"
+    ca_path: "{{ atmosphere_use_manifest_ca_file }}"
+    status_code: 401
+  register: _registry
+  until: _registry.status == 401
+  retries: 30
+  delay: 1
+
+- name: Create the Docker configuration directory
+  ansible.builtin.file:
+    path: "{{ ansible_user_dir }}/.docker"
+    state: directory
+    mode: "0700"
+
+- name: Log in to the registry
+  ansible.builtin.copy:
+    dest: "{{ ansible_user_dir }}/.docker/config.json"
+    mode: "0600"
+    content: >-
+      {{ {'auths': {atmosphere_use_manifest_host ~ ':' ~ atmosphere_use_manifest_port:
+          {'auth': ('ci:' ~ _atmosphere_use_manifest_password) | b64encode}}} | to_json }}
+  no_log: true
+
+- name: Download the release manifest from the build job
+  ansible.builtin.get_url:
+    url: "{{ _manifest_url }}"
+    dest: "{{ ansible_user_dir }}/release-manifest.yaml"
+    mode: "0644"
+
+- name: Push the release manifest to the registry
+  ansible.builtin.command:
+    argv:
+      - atmosphere-release
+      - push
+      - --file
+      - "{{ ansible_user_dir }}/release-manifest.yaml"
+      - "{{ atmosphere_use_manifest_reference }}"
+  environment:
+    DOCKER_CONFIG: "{{ ansible_user_dir }}/.docker"
+  register: _atmosphere_use_manifest_push
+  changed_when: true
+
+- name: Check that every job deploys the manifest the build job generated
+  ansible.builtin.assert:
+    that:
+      - _atmosphere_use_manifest_push.stdout_lines | last | regex_replace('^.*@', '') == atmosphere_release_manifest_digest
+    fail_msg: >-
+      Pushed {{ _atmosphere_use_manifest_push.stdout }}, but the build job
+      generated {{ atmosphere_release_manifest_digest }}.
+
+- name: Deploy from the release manifest in the registry
+  ansible.builtin.set_fact:
+    atmosphere_release_manifest: "{{ atmosphere_use_manifest_reference }}"
+    atmosphere_release_manifest_ca_file: "{{ atmosphere_use_manifest_ca_file }}"

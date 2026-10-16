@@ -1,0 +1,15 @@
+version: 0.1
+log:
+  level: warn
+storage:
+  filesystem:
+    rootdirectory: {{ atmosphere_use_manifest_dir }}/data
+auth:
+  htpasswd:
+    realm: atmosphere-ci-registry
+    path: {{ atmosphere_use_manifest_dir }}/htpasswd
+http:
+  addr: 127.0.0.1:{{ atmosphere_use_manifest_port }}
+  tls:
+    certificate: {{ atmosphere_use_manifest_dir }}/tls/cert.pem
+    key: {{ atmosphere_use_manifest_dir }}/tls/key.pem

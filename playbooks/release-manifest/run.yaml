@@ -1,0 +1,7 @@
+# Copyright (c) 2026 VEXXHOST, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+- name: Build the release manifest
+  hosts: all
+  roles:
+    - atmosphere-build-manifest
