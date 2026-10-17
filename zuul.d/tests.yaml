@@ -1,0 +1,40 @@
+- job:
+    name: atmosphere-zuul-jobs-test-atmosphere-build-manifest
+    description: |
+      Test the atmosphere-build-manifest role, the same way the
+      atmosphere-release-manifest job uses it.
+    nodeset: atmosphere-ubuntu-jammy-single-node
+    files: &release_manifest_files
+      - ^roles/atmosphere-build-manifest/.*
+      - ^roles/atmosphere-use-manifest/.*
+      - ^playbooks/release-manifest/.*
+      - ^test-playbooks/atmosphere-use-manifest.yaml$
+      - ^zuul.d/tests.yaml$
+    required-projects:
+      - vexxhost/atmosphere
+    run: playbooks/release-manifest/run.yaml
+    vars:
+      atmosphere_image_prefix: "harbor.atmosphere.dev/"
+
+- job:
+    name: atmosphere-zuul-jobs-test-atmosphere-use-manifest
+    description: |
+      Test the atmosphere-use-manifest role with the manifest built by
+      atmosphere-zuul-jobs-test-atmosphere-build-manifest: it must push the
+      exact manifest that job generated, and Atmosphere must read the same
+      images back from the registry.
+    nodeset: atmosphere-ubuntu-jammy-single-node
+    files: *release_manifest_files
+    required-projects:
+      - vexxhost/atmosphere
+    run: test-playbooks/atmosphere-use-manifest.yaml
+
+- project:
+    check:
+      jobs: &release_manifest_tests
+        - atmosphere-zuul-jobs-test-atmosphere-build-manifest
+        - atmosphere-zuul-jobs-test-atmosphere-use-manifest:
+            dependencies:
+              - atmosphere-zuul-jobs-test-atmosphere-build-manifest
+    gate:
+      jobs: *release_manifest_tests
