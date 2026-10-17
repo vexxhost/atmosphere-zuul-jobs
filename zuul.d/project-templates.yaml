@@ -1,16 +1,17 @@
 - project-template:
     name: atmosphere-molecule-jobs
     check:
-      jobs:
-        - atmosphere-molecule-aio-openvswitch
-        - atmosphere-molecule-aio-ovn
-        - atmosphere-molecule-csi-local-path-provisioner
-        - atmosphere-molecule-csi-rbd
-        - atmosphere-molecule-keycloak
+      jobs: &atmosphere_molecule_jobs
+        - atmosphere-release-manifest
+        - atmosphere-molecule-aio-openvswitch:
+            dependencies: [atmosphere-release-manifest]
+        - atmosphere-molecule-aio-ovn:
+            dependencies: [atmosphere-release-manifest]
+        - atmosphere-molecule-csi-local-path-provisioner:
+            dependencies: [atmosphere-release-manifest]
+        - atmosphere-molecule-csi-rbd:
+            dependencies: [atmosphere-release-manifest]
+        - atmosphere-molecule-keycloak:
+            dependencies: [atmosphere-release-manifest]
     gate:
-      jobs:
-        - atmosphere-molecule-aio-openvswitch
-        - atmosphere-molecule-aio-ovn
-        - atmosphere-molecule-csi-local-path-provisioner
-        - atmosphere-molecule-csi-rbd
-        - atmosphere-molecule-keycloak
+      jobs: *atmosphere_molecule_jobs

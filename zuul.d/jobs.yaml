@@ -1,4 +1,22 @@
 - job:
+    name: atmosphere-release-manifest
+    description: |
+      Generate the release manifest for the change under test once per
+      buildset. The molecule jobs depend on this job and deploy exactly this
+      manifest, and "atmosphere-release publish" publishes it after the
+      change merges.
+    nodeset: atmosphere-ubuntu-jammy-single-node
+    run: playbooks/release-manifest/run.yaml
+    irrelevant-files:
+      - ^\.agents/.*$
+      - ^doc/.*$
+      - ^releasenotes/.*$
+      - ^renovate\.json$
+      - ^\.pre-commit-config.yaml$
+    vars:
+      atmosphere_image_prefix: "harbor.atmosphere.dev/"
+
+- job:
     name: atmosphere-molecule
     parent: molecule
     abstract: true
@@ -28,6 +46,16 @@
       - zuul: opendev.org/openstack/openstack-helm
     vars:
       atmosphere_image_prefix: "harbor.atmosphere.dev/"
+      # NOTE: The atmosphere-release-manifest job generates the release
+      #       manifest once per buildset; the pre-run playbook pushes it to a
+      #       registry on the node, and the deployment reads it from there by
+      #       reference, like published releases. The mirror rule keeps the
+      #       image prefix away from that registry.
+      atmosphere_release_manifest: atmosphere-ci-registry:5443/vexxhost/atmosphere-release:ci
+      atmosphere_release_manifest_ca_file: /usr/local/share/ca-certificates/atmosphere-ci-registry.crt
+      atmosphere_image_mirrors:
+        - source: atmosphere-ci-registry:5443
+          mirror: atmosphere-ci-registry:5443
       ceph_fsid: 4837cbf8-4f90-4300-b3f6-726c9b9f89b4
       ceph_conf_overrides:
         - section: global

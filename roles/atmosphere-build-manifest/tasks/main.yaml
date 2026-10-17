@@ -1,0 +1,73 @@
+- name: Install Go
+  ansible.builtin.include_role:
+    name: ensure-go
+  vars:
+    go_version: "{{ atmosphere_build_manifest_go_version }}"
+
+- name: Create the output directory
+  ansible.builtin.file:
+    path: "{{ atmosphere_build_manifest_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Build and run atmosphere-release
+  environment:
+    PATH: "/usr/local/go/bin:{{ ansible_env.PATH }}"
+    GOTOOLCHAIN: auto
+    CGO_ENABLED: "0"
+  block:
+    - name: Build atmosphere-release
+      ansible.builtin.command:
+        argv:
+          - go
+          - build
+          - -trimpath
+          - -o
+          - "{{ atmosphere_build_manifest_dir }}/atmosphere-release"
+          - ./cmd/atmosphere-release
+        chdir: "{{ atmosphere_build_manifest_src_dir }}"
+      changed_when: true
+
+    - name: Generate the release manifest
+      ansible.builtin.command:
+        argv: >-
+          {{
+            [atmosphere_build_manifest_dir + '/atmosphere-release', 'generate',
+             '--output', atmosphere_build_manifest_dir + '/release-manifest.yaml']
+            + (['--resolve-prefix', atmosphere_build_manifest_resolve_prefix]
+               if atmosphere_build_manifest_resolve_prefix | length > 0 else [])
+          }}
+        chdir: "{{ atmosphere_build_manifest_src_dir }}"
+      changed_when: true
+
+- name: Compute the release manifest artifact digest
+  ansible.builtin.command:
+    argv:
+      - "{{ atmosphere_build_manifest_dir }}/atmosphere-release"
+      - digest
+      - --file
+      - "{{ atmosphere_build_manifest_dir }}/release-manifest.yaml"
+  register: _atmosphere_build_manifest_digest
+  changed_when: false
+
+- name: Save the release manifest and atmosphere-release with the job logs
+  ansible.builtin.fetch:
+    src: "{{ atmosphere_build_manifest_dir }}/{{ item }}"
+    dest: "{{ zuul.executor.log_root }}/{{ item }}"
+    flat: true
+  loop:
+    - release-manifest.yaml
+    - atmosphere-release
+
+- name: Return the release manifest to dependent jobs
+  zuul_return:
+    data:
+      zuul:
+        artifacts:
+          - name: Release manifest
+            url: release-manifest.yaml
+            metadata:
+              digest: "{{ _atmosphere_build_manifest_digest.stdout }}"
+          - name: atmosphere-release
+            url: atmosphere-release
+      atmosphere_release_manifest_digest: "{{ _atmosphere_build_manifest_digest.stdout }}"

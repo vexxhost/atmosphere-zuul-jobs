@@ -1,0 +1,4 @@
+atmosphere_build_manifest_src_dir: "{{ zuul.projects['github.com/vexxhost/atmosphere'].src_dir }}"
+atmosphere_build_manifest_resolve_prefix: "{{ atmosphere_image_prefix | default('') }}"
+atmosphere_build_manifest_go_version: "1.24.4"
+atmosphere_build_manifest_dir: "{{ ansible_user_dir }}/atmosphere-release-manifest"

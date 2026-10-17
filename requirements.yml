@@ -1,0 +1,6 @@
+---
+# Collections used by the playbooks and roles in this repository. Zuul
+# provides them with its Ansible installation; ansible-lint installs them to
+# check the playbooks.
+collections:
+  - name: community.general

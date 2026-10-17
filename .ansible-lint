@@ -1,0 +1,17 @@
+---
+# NOTE: These roles and modules come from the zuul/zuul-jobs and
+#       vexxhost/zuul-jobs projects and from Zuul itself; they are only
+#       available when the playbooks run in Zuul.
+mock_roles:
+  - describe-kubernetes-objects
+  - ensure-go
+  - gather-host-logs
+  - gather-pod-logs
+  - gather-prom-metrics
+  - gather-selenium-data
+  - helm-release-status
+mock_modules:
+  - zuul_return
+skip_list:
+  # NOTE: Zuul roles use hyphenated names, like those in zuul/zuul-jobs.
+  - role-name

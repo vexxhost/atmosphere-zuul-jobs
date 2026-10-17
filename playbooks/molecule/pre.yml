@@ -1,7 +1,8 @@
 # Copyright (c) 2025 VEXXHOST, Inc.
 # SPDX-License-Identifier: Apache-2.0
 
-- hosts: all
+- name: Prepare the node for log collection
+  hosts: all
   become: true
   tasks:
     - name: Install "jq" for log collection
@@ -10,3 +11,8 @@
         update_cache: true
       when:
         - ansible_facts['os_family'] | lower == 'debian'
+
+- name: Deploy from the release manifest built for this buildset
+  hosts: all
+  roles:
+    - atmosphere-use-manifest
