@@ -20,3 +20,17 @@
       - name: instance
         label: ubuntu-jammy-16
     groups: *single_node_groups
+
+- nodeset:
+    name: atmosphere-ubuntu-noble-single-node
+    nodes:
+      - name: instance
+        label: ubuntu-noble
+    groups: *single_node_groups
+
+- nodeset:
+    name: atmosphere-ubuntu-noble-single-node-16
+    nodes:
+      - name: instance
+        label: ubuntu-noble-16
+    groups: *single_node_groups

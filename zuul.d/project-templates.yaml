@@ -1,3 +1,44 @@
+# NOTE: Each Atmosphere branch lists the template for every Ubuntu release it
+#       supports. The release manifest job is shared, so a branch that uses
+#       both templates still builds a single manifest per buildset.
+- project-template:
+    name: atmosphere-molecule-ubuntu-jammy-jobs
+    check:
+      jobs: &atmosphere_molecule_ubuntu_jammy_jobs
+        - atmosphere-release-manifest
+        - atmosphere-molecule-ubuntu-jammy-aio-openvswitch:
+            dependencies: [atmosphere-release-manifest]
+        - atmosphere-molecule-ubuntu-jammy-aio-ovn:
+            dependencies: [atmosphere-release-manifest]
+        - atmosphere-molecule-ubuntu-jammy-csi-local-path-provisioner:
+            dependencies: [atmosphere-release-manifest]
+        - atmosphere-molecule-ubuntu-jammy-csi-rbd:
+            dependencies: [atmosphere-release-manifest]
+        - atmosphere-molecule-ubuntu-jammy-keycloak:
+            dependencies: [atmosphere-release-manifest]
+    gate:
+      jobs: *atmosphere_molecule_ubuntu_jammy_jobs
+
+- project-template:
+    name: atmosphere-molecule-ubuntu-noble-jobs
+    check:
+      jobs: &atmosphere_molecule_ubuntu_noble_jobs
+        - atmosphere-release-manifest
+        - atmosphere-molecule-ubuntu-noble-aio-openvswitch:
+            dependencies: [atmosphere-release-manifest]
+        - atmosphere-molecule-ubuntu-noble-aio-ovn:
+            dependencies: [atmosphere-release-manifest]
+        - atmosphere-molecule-ubuntu-noble-csi-local-path-provisioner:
+            dependencies: [atmosphere-release-manifest]
+        - atmosphere-molecule-ubuntu-noble-csi-rbd:
+            dependencies: [atmosphere-release-manifest]
+        - atmosphere-molecule-ubuntu-noble-keycloak:
+            dependencies: [atmosphere-release-manifest]
+    gate:
+      jobs: *atmosphere_molecule_ubuntu_noble_jobs
+
+# NOTE: Kept until every Atmosphere branch uses the release-specific
+#       templates above; it runs the same tests on Ubuntu 22.04.
 - project-template:
     name: atmosphere-molecule-jobs
     check:

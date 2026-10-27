@@ -321,3 +321,57 @@
         controller:
           config:
             worker-processes: 2
+
+# NOTE: Each molecule job has one variant per Ubuntu release. They only pin
+#       the nodeset, so the release-specific project templates can run
+#       the same tests on every release that a branch supports.
+
+- job:
+    name: atmosphere-molecule-ubuntu-jammy-aio-openvswitch
+    parent: atmosphere-molecule-aio-openvswitch
+    nodeset: atmosphere-ubuntu-jammy-single-node-16
+
+- job:
+    name: atmosphere-molecule-ubuntu-jammy-aio-ovn
+    parent: atmosphere-molecule-aio-ovn
+    nodeset: atmosphere-ubuntu-jammy-single-node-16
+
+- job:
+    name: atmosphere-molecule-ubuntu-jammy-csi-local-path-provisioner
+    parent: atmosphere-molecule-csi-local-path-provisioner
+    nodeset: atmosphere-ubuntu-jammy-single-node
+
+- job:
+    name: atmosphere-molecule-ubuntu-jammy-csi-rbd
+    parent: atmosphere-molecule-csi-rbd
+    nodeset: atmosphere-ubuntu-jammy-single-node
+
+- job:
+    name: atmosphere-molecule-ubuntu-jammy-keycloak
+    parent: atmosphere-molecule-keycloak
+    nodeset: atmosphere-ubuntu-jammy-single-node
+
+- job:
+    name: atmosphere-molecule-ubuntu-noble-aio-openvswitch
+    parent: atmosphere-molecule-aio-openvswitch
+    nodeset: atmosphere-ubuntu-noble-single-node-16
+
+- job:
+    name: atmosphere-molecule-ubuntu-noble-aio-ovn
+    parent: atmosphere-molecule-aio-ovn
+    nodeset: atmosphere-ubuntu-noble-single-node-16
+
+- job:
+    name: atmosphere-molecule-ubuntu-noble-csi-local-path-provisioner
+    parent: atmosphere-molecule-csi-local-path-provisioner
+    nodeset: atmosphere-ubuntu-noble-single-node
+
+- job:
+    name: atmosphere-molecule-ubuntu-noble-csi-rbd
+    parent: atmosphere-molecule-csi-rbd
+    nodeset: atmosphere-ubuntu-noble-single-node
+
+- job:
+    name: atmosphere-molecule-ubuntu-noble-keycloak
+    parent: atmosphere-molecule-keycloak
+    nodeset: atmosphere-ubuntu-noble-single-node
