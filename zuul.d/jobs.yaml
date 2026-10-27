@@ -91,12 +91,14 @@
 - job:
     name: atmosphere-molecule-csi-local-path-provisioner
     parent: atmosphere-molecule-csi
+    abstract: true
     vars:
       csi_driver: local-path-provisioner
 
 - job:
     name: atmosphere-molecule-csi-rbd
     parent: atmosphere-molecule-csi
+    abstract: true
     vars:
       csi_driver: rbd
 
@@ -291,18 +293,21 @@
 - job:
     name: atmosphere-molecule-aio-openvswitch
     parent: atmosphere-molecule-aio
+    abstract: true
     vars:
       atmosphere_network_backend: openvswitch
 
 - job:
     name: atmosphere-molecule-aio-ovn
     parent: atmosphere-molecule-aio
+    abstract: true
     vars:
       atmosphere_network_backend: ovn
 
 - job:
     name: atmosphere-molecule-keycloak
     parent: atmosphere-molecule
+    abstract: true
     vars:
       molecule_scenario: keycloak
       csi_driver: local-path-provisioner
@@ -322,9 +327,9 @@
           config:
             worker-processes: 2
 
-# NOTE: Each molecule job has one variant per Ubuntu release. They only pin
-#       the nodeset, so the release-specific project templates can run
-#       the same tests on every release that a branch supports.
+# NOTE: The scenario jobs above are abstract. Each has one variant per Ubuntu
+#       release that only pins the nodeset, so the release-specific project
+#       templates can run the same tests on every release a branch supports.
 
 - job:
     name: atmosphere-molecule-ubuntu-jammy-aio-openvswitch
