@@ -363,6 +363,19 @@
       atmosphere_network_backend: ovn
 
 - job:
+    name: atmosphere-molecule-aio-upgrade-full
+    parent: atmosphere-molecule-aio-upgrade-ovn
+    abstract: true
+    description: |
+      Extended variant of ``atmosphere-molecule-aio-upgrade`` that also puts a
+      load balancer (Octavia) in front of the workload server before the
+      upgrade, then checks that the load balancer is still active and serves
+      the same server. It takes longer than the core upgrade jobs, so projects
+      run it periodically.
+    vars:
+      molecule_scenario: upgrade-full
+
+- job:
     name: atmosphere-molecule-multinode-upgrade
     parent: atmosphere-molecule-aio-upgrade
     abstract: true
@@ -458,6 +471,11 @@
 - job:
     name: atmosphere-molecule-ubuntu-noble-aio-upgrade-ovn
     parent: atmosphere-molecule-aio-upgrade-ovn
+    nodeset: atmosphere-ubuntu-noble-single-node-16
+
+- job:
+    name: atmosphere-molecule-ubuntu-noble-aio-upgrade-full
+    parent: atmosphere-molecule-aio-upgrade-full
     nodeset: atmosphere-ubuntu-noble-single-node-16
 
 - job:
