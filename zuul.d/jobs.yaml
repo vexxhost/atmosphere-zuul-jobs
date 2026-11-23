@@ -327,6 +327,41 @@
           config:
             worker-processes: 2
 
+- job:
+    name: atmosphere-molecule-aio-upgrade
+    parent: atmosphere-molecule-aio
+    abstract: true
+    description: |
+      Upgrade test modelled on OpenStack's grenade. The "upgrade" Molecule
+      scenario deploys the previous Atmosphere release from a second checkout
+      of the repository, creates a workload that must survive the upgrade (a
+      server with a floating IP and a volume, and an application credential),
+      upgrades to the change under test while measuring how long the workload
+      and the Keystone API are unreachable, checks that the workload kept
+      running with its data, and runs Tempest.
+
+      The release to upgrade from is the newest ``stable/*`` branch older than
+      the branch under test (the newest one for ``main``). Set
+      ``ATMOSPHERE_UPGRADE_FROM`` in ``molecule_environment`` to upgrade from
+      another Git reference.
+    timeout: 10800
+    vars:
+      molecule_scenario: upgrade
+
+- job:
+    name: atmosphere-molecule-aio-upgrade-openvswitch
+    parent: atmosphere-molecule-aio-upgrade
+    abstract: true
+    vars:
+      atmosphere_network_backend: openvswitch
+
+- job:
+    name: atmosphere-molecule-aio-upgrade-ovn
+    parent: atmosphere-molecule-aio-upgrade
+    abstract: true
+    vars:
+      atmosphere_network_backend: ovn
+
 # NOTE: The scenario jobs above are abstract. Each has one variant per Ubuntu
 #       release that only pins the nodeset, so the release-specific project
 #       templates can run the same tests on every release a branch supports.
@@ -380,3 +415,13 @@
     name: atmosphere-molecule-ubuntu-noble-keycloak
     parent: atmosphere-molecule-keycloak
     nodeset: atmosphere-ubuntu-noble-single-node
+
+- job:
+    name: atmosphere-molecule-ubuntu-noble-aio-upgrade-openvswitch
+    parent: atmosphere-molecule-aio-upgrade-openvswitch
+    nodeset: atmosphere-ubuntu-noble-single-node-16
+
+- job:
+    name: atmosphere-molecule-ubuntu-noble-aio-upgrade-ovn
+    parent: atmosphere-molecule-aio-upgrade-ovn
+    nodeset: atmosphere-ubuntu-noble-single-node-16
