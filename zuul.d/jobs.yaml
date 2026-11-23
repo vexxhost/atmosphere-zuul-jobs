@@ -362,6 +362,40 @@
     vars:
       atmosphere_network_backend: ovn
 
+- job:
+    name: atmosphere-molecule-multinode-upgrade
+    parent: atmosphere-molecule-aio-upgrade
+    abstract: true
+    description: |
+      Multi-node variant of ``atmosphere-molecule-aio-upgrade``: a controller
+      (which also runs Ceph and the network gateway) and two compute nodes,
+      joined by a management network overlay. The workload starts on the
+      first compute node before the upgrade and is live-migrated to the second
+      one afterwards, which checks that guests started on the previous release
+      can move to hosts running the new libvirt and QEMU.
+    nodeset: atmosphere-ubuntu-noble-three-node
+    vars:
+      molecule_scenario: upgrade-multinode
+      upgrade_server_availability_zone: nova:compute1
+      kubernetes_hostname: 10.96.240.10
+      kubernetes_keepalived_interface: br-mgmt
+      kube_vip_interface: br-mgmt
+      kube_vip_address: 10.96.240.10
+
+- job:
+    name: atmosphere-molecule-multinode-upgrade-openvswitch
+    parent: atmosphere-molecule-multinode-upgrade
+    abstract: true
+    vars:
+      atmosphere_network_backend: openvswitch
+
+- job:
+    name: atmosphere-molecule-multinode-upgrade-ovn
+    parent: atmosphere-molecule-multinode-upgrade
+    abstract: true
+    vars:
+      atmosphere_network_backend: ovn
+
 # NOTE: The scenario jobs above are abstract. Each has one variant per Ubuntu
 #       release that only pins the nodeset, so the release-specific project
 #       templates can run the same tests on every release a branch supports.
@@ -425,3 +459,13 @@
     name: atmosphere-molecule-ubuntu-noble-aio-upgrade-ovn
     parent: atmosphere-molecule-aio-upgrade-ovn
     nodeset: atmosphere-ubuntu-noble-single-node-16
+
+- job:
+    name: atmosphere-molecule-ubuntu-noble-multinode-upgrade-openvswitch
+    parent: atmosphere-molecule-multinode-upgrade-openvswitch
+    nodeset: atmosphere-ubuntu-noble-three-node
+
+- job:
+    name: atmosphere-molecule-ubuntu-noble-multinode-upgrade-ovn
+    parent: atmosphere-molecule-multinode-upgrade-ovn
+    nodeset: atmosphere-ubuntu-noble-three-node

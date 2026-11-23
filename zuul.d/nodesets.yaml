@@ -34,3 +34,24 @@
       - name: instance
         label: ubuntu-noble-16
     groups: *single_node_groups
+
+- nodeset:
+    name: atmosphere-ubuntu-noble-three-node
+    nodes:
+      - name: controller
+        label: ubuntu-noble-16
+      - name: compute1
+        label: ubuntu-noble
+      - name: compute2
+        label: ubuntu-noble
+    groups:
+      - name: controllers
+        nodes:
+          - controller
+      - name: cephs
+        nodes:
+          - controller
+      - name: computes
+        nodes:
+          - compute1
+          - compute2
